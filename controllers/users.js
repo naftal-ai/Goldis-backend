@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 //CREATE
 //sign up
 export const signup = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     // Check if the user already exists
