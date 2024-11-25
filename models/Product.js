@@ -10,22 +10,20 @@ const productSchema = new mongoose.Schema({
   },
   description: { type: String },
   images: [String],
-  colors: [
-    {
-      color: { type: String, required: true },
-      stock: { type: Number, required: true },
-    },
-  ],
   stock: { type: Number, required: true, default: 0 }, // General stock
 });
 
-// Middleware to update stock before saving
-productSchema.pre("save", function (next) {
-  if (this.colors && this.colors.length > 0) {
-    this.stock = this.colors.reduce((total, color) => total + color.stock, 0);
+//instance method to update stock
+productSchema.methods.updateStock = async function (quantityChange) {
+  if (this.stock + quantityChange < 0) {
+    throw new Error('Insufficient stock');
   }
-  next();
-});
+
+  this.stock += quantityChange;
+  return this.save();
+};
+
+
 
 const Product = mongoose.model("Product", productSchema);
 

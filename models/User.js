@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 const UserSchema = new Schema({
   name: {
     type: String,
-    required: true, // User's name is mandatory
+    required: true, 
   },
   email: {
     type: String,
@@ -12,15 +12,22 @@ const UserSchema = new Schema({
     unique: true,
     match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address'],
   },
+  address: {
+    city: {type: String, required: true},
+    street: {type: String, required: true},
+    house: {type: String, required: true},
+    comments: {type: String, required: false},
+  }
+  ,
   password: {
     type: String,
     required: true,
   },
   role: {
     type: String,
-    required: true, // Role (e.g., admin, user) is essential
-    enum: ['user', 'admin'], // Limits possible values for role
-    default: 'user',         // Defaults to 'user'
+    required: true, 
+    enum: ['user', 'admin'], 
+    default: 'user',   
   },
   avatar: {
     type: String, 
@@ -48,9 +55,7 @@ UserSchema.pre("save", async function (next) {
 
 // Instance method to compare passwords
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-
     return await bcrypt.compare(candidatePassword, this.password);
-  
 };
 
 // Exclude password from responses

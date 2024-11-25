@@ -1,6 +1,6 @@
 //user routes
 import express from "express";
-import { signup, signin, user } from "../controllers/users.js";
+import { signup, signin, user, admin } from "../controllers/users.js";
 
 //middlewares
 import authenticate from '../middlewares/authenticate.js';
@@ -25,9 +25,11 @@ router.get('/my-data',authenticate, user.read);
 
 //privilege admin
 //read : admin
+router.get('/', authenticate, authorizeAdmin, admin.readAll);
+router.get('/:id', authenticate, authorizeAdmin, admin.readById);
 
 //update : admin 
 
 //delete :admin
-
+router.delete('/:id', authenticate, authorizeAdmin, admin.delete_u);
 export default router;

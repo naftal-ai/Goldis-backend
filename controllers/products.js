@@ -7,42 +7,21 @@ export const create = async (req, res) => {
   res.json({ message: "empty function" });
 };
 //READ
-export const read = {
-  //all
-  all: async (req, res) => {
-    try {
-      const products = await Product.find();
-      res.status(200).json(products);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-  //by category
-  byCategory: async (req, res) => {
-    const categoryName = req.params.category;
-    try {
-      const category = await Category.findOne({ name: categoryName });
-      if (category) {
-        const products = await Product.find({ category: category._id });
-        res.status(200).json({ products });
-      } else {
-        return res.status(400).json({ message: "Category not found" });
-      }
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  },
-  //by price
+//with filters
+export const read = (req, res) => { 
 
-  //by name
+  const { category, minPrice, maxPrice } = req.query;
 
-  //by id
-  byId: async (req, res) => {
-    const product = await Product.findById(req.params.id);
-    res.json(product);
-  },
-};
+  const filters = {};
+  if (category) filters.category = category;
+  if (minPrice) filters.price = { ...filters.price, $gte: parseFloat(minPrice) };
+  if (maxPrice) filters.price = { ...filters.price, $lte: parseFloat(maxPrice) };
 
+  Product.find(filters)
+    .then(products => res.status(200).json(products))
+    .catch(err => res.status(500).json({ error: err.message }));
+
+  }
 //UPDATE
 
 export const update = async (req, res) => {
@@ -55,6 +34,11 @@ export const update = async (req, res) => {
 //DELETE
 
 export const delete_p = async (req, res) => {
-  await Product.findByIdAndDelete(req.params.id);
-  res.status(204).send();
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+    
+  } catch (error) {
+    res.status(500).json({error : error.message});
+  }
 };

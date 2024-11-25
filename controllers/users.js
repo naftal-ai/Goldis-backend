@@ -44,16 +44,14 @@ export const signin = async (req, res) => {
 
     // Compare the password
     const isPasswordValid = await user.comparePassword(password);
-    console.log(isPasswordValid);
+    
     if (!isPasswordValid) {
       return res.status(400).json({ message: "Invalid email or password." });
     }
 
     // Generate a JWT
-    console.log(user);
-
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "12h",
     });
 
     res.status(200).json({ message: "Sign in successful.", token });
@@ -66,7 +64,7 @@ export const signin = async (req, res) => {
 //user privilege
 export const user = {
   read: async (req, res) => {
-    // const {_id} = req.user;
+    
     res.json(req.user);
   },
   update: null,
@@ -79,3 +77,51 @@ export const user = {
 //UPDATE
 
 //DELETE
+
+
+//Admin Privilege
+//create new admin account
+
+//read 
+export const admin = {
+  //all users
+  readAll : async (req, res) => {
+    try {
+      const users = await User.find();
+      res.status(200).json(users);
+    } catch (error) {
+      res.status(500).json({message: error.message});
+    }
+  },
+  //by id
+  readById : async (req, res) => {
+    const {id} = req.params;
+    try {
+      const user = await User.findById(id);
+      if(!user) {
+        return res.status(401).json({message: 'user not found'});
+      }
+      res.status(200).json(user);
+    } catch (error) {
+      res.status(500).json({message: error.message});
+    }
+  },
+
+  //upgrade user privilege
+  
+  //delete users
+  delete_u : async (req, res) => {
+    const {id} = req.params;
+    try {
+      const user = await User.findByIdAndDelete(id);
+      if(!user) {
+        return res.status(401).json({message: 'user not found'});
+      }
+      res.status(200).json(user);
+    } catch (error) {
+      res.status(500).json({message: error.message});
+    }
+  }
+}
+
+
