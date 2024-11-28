@@ -20,7 +20,7 @@ router.get("/", read);
 
 //UPDATE
 
-router.put("/:id",authenticate, authorizeAdmin, update);
+router.patch("/:id",authenticate, authorizeAdmin, update);
 
 //DELETE
 

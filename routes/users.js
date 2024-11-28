@@ -24,6 +24,8 @@ router.get('/my-data',authenticate, user.read);
 //delete my user
 
 //privilege admin
+//create another admin
+
 //read : admin
 router.get('/', authenticate, authorizeAdmin, admin.readAll);
 router.get('/:id', authenticate, authorizeAdmin, admin.readById);

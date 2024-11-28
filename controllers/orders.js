@@ -1,15 +1,14 @@
-import Order from "../models/Order.js";
-import Product from "../models/Product.js";
 import {
   getProducts,
-  calculateTotalPrice,
   productsInStock,
-  getClientSecret,
-  updateStock
+  createSession
 } from "../services/orders.js";
+
+
 // Create : user
 
 export const create = async (req, res) => {
+
   const { items } = req.body; // Products IDs, and quantities
 
   if (!items || items.length === 0) {
@@ -19,22 +18,18 @@ export const create = async (req, res) => {
   try {
     //get all the products from ids
     const products = await getProducts(items);
-
-    console.log(products);
     
     //make sure products in stock
-    if(!productsInStock(products)) throw new Error('not all the products in stock');
+    if (!productsInStock(products))
+      throw new Error("not all the products in stock");
 
-    //calculate the total price of the order
-    const totalPrice = calculateTotalPrice(products);
+    const session = await createSession(products);
 
-    res
-      .status(201)
-      .json({ message: "Order created successfully", order: products, totalPrice: totalPrice });
+    res.status(200).json({
+      sessionID: session.id,
+    });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error creating order", error: err.message });
+    res.status(500).json({ err });
   }
 };
 

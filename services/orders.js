@@ -1,36 +1,60 @@
 import Product from "../models/Product.js";
+import Stripe from "stripe";
 
-// 0. the user signed in
-// and wants to checkout with the order
-// and send all the product ids and quantities
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export const productsInStock = (products) => {
+  return products.reduce(
+    (prevStock, { stock, quantity }) =>
+      prevStock && stock >= quantity,
+    true
+  );
+};
+
 export const getProducts = async (items) => {
   const products = await Promise.all(
     items.map(({ id }) => Product.findById(id))
   );
 
   const replaceIdsWithProducts = () =>
-    items.map(({ id, quantity }) => ({
-      product: products.find((p) => p._id.toString() === id),
-      quantity: quantity,
-    }));
+    items.map(({ quantity }, i) => {
+      return {
+        ...products[i]._doc,
+        quantity,
+      };
+    });
 
   return replaceIdsWithProducts();
 };
 
-// 1. Make sure the products in stock
-export const productsInStock = (products) => {
-  return products.reduce(
-    (prevStock, { product, quantity }) =>
-      prevStock && product.stock >= quantity,
-    true
-  );
-};
-// 2. Calculate total price
-export const calculateTotalPrice = (products) =>
-  products.reduce(
-    (total, { product, quantity }) => total + product.price * quantity,
-    0
-  );
+
+export const createSession = async (products) => {
+
+  const lineItems = products.map(({ name, description, images, quantity, price }) => {
+    return {
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name,
+          description,
+          images,
+        },
+        unit_amount: price * 100,
+      },
+      quantity,
+    };
+  });
+
+  return stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: lineItems,
+    mode: "payment",
+    success_url: `${process.env.CLIENT_URL}/success`,
+    cancel_url: `${process.env.CLIENT_URL}/cancel`,
+  });
+}
+
+
 
 // 3. send a payment intent to the user
 export const getClientSecret = async (amount, currency) => {
@@ -42,6 +66,8 @@ export const getClientSecret = async (amount, currency) => {
   return paymentIntent.client_secret;
 };
 // 4. Make sure the payment passed in success
+
+
 // 5. update the amount in stock of all the products in the order
 export const updateStock = async (items) => {
   const updatePromises = items.map(async ({ id, quantity }) => {
