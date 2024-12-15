@@ -1,23 +1,36 @@
 //order routes
 import express from "express";
-import { create } from '../controllers/orders.js';
+import {
+  create,
+  read,
+  readAllUsersOrders,
+  readByOrderId,
+  reactivate,
+} from "../controllers/orders.js";
 //middlewares
-import authenticate from '../middlewares/authenticate.js'; 
+import authenticate from "../middlewares/authenticate.js";
+import authorizeAdmin from "../middlewares/authorizeAdmin.js";
 
 const router = express.Router();
 
-
-//create : user 
+//create : user
 
 router.post("/", authenticate, create);
 
-export default router;
+//reactivate : user
 
-//read 
+router.post("/:orderId/reactivate", authenticate, reactivate);
+
+//read
+
+router.get("/", authenticate, read);
 
 //all : admin
+router.get("/all", authenticate, authorizeAdmin, readAllUsersOrders);
 
-//by user 
+//by order id : admin
+router.get("/:id", authenticate, readByOrderId);
 
 //by product : admin
 
+export default router;

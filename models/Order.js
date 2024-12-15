@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
+import User from "./User.js";
 
-const Schema = mongoose.Schema;
+const { Schema } = mongoose;
 
 const OrderSchema = new Schema({
   user: {
@@ -20,7 +21,7 @@ const OrderSchema = new Schema({
         required: true,
         default: 1,
       }
-    },
+    }
   ],
   totalPrice: {
     type: Number,
@@ -28,9 +29,14 @@ const OrderSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'shipped', 'delivered', 'cancelled'],
+    enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
     default: 'pending',
   }
 }, {timestamps: true});
+
+//save the order in the user object when created
+OrderSchema.post('save', async function (doc) {
+  await User.findByIdAndUpdate(doc.user, {$push: {orders: doc._id}});
+})
 
 export default mongoose.model('Order', OrderSchema);

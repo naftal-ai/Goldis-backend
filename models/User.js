@@ -26,8 +26,8 @@ const UserSchema = new Schema({
   role: {
     type: String,
     required: true, 
-    enum: ['user', 'admin'], 
-    default: 'user',   
+    enum: ['customer', 'admin'], 
+    default: 'customer',   
   },
   avatar: {
     type: String, 
@@ -37,6 +37,7 @@ const UserSchema = new Schema({
     {
       type: Schema.Types.ObjectId,
       ref: 'Order',
+      unique: true,
     },
   ],
 }, { timestamps: true });

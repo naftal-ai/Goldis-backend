@@ -1,5 +1,7 @@
 import Product from "../models/Product.js";
+import Order from "../models/Order.js";
 import Stripe from "stripe";
+
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -27,9 +29,27 @@ export const getProducts = async (items) => {
   return replaceIdsWithProducts();
 };
 
+export const createOrder = async (user, items, totalPrice) => {
+  const products = items.map(({id: product, quantity}) => ({product, quantity}));
+ 
+  const order = new Order(
+    {
+      user,
+      products,
+      totalPrice
+    }
+  );
 
-export const createSession = async (products) => {
 
+  await order.save();
+
+  return order;
+}
+
+
+
+export const createSession = async (products, orderId) => {
+  orderId = orderId.toString();
   const lineItems = products.map(({ name, description, images, quantity, price }) => {
     return {
       price_data: {
@@ -41,6 +61,7 @@ export const createSession = async (products) => {
         },
         unit_amount: price * 100,
       },
+      
       quantity,
     };
   });
@@ -48,6 +69,7 @@ export const createSession = async (products) => {
   return stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items: lineItems,
+    metadata: {orderId},
     mode: "payment",
     success_url: `${process.env.CLIENT_URL}/success`,
     cancel_url: `${process.env.CLIENT_URL}/cancel`,
