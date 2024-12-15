@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 //CREATE
 //sign up
 export const signup = async (req, res) => {
-  const { name, email, password, role, address } = req.body;
+  const { name, email, password, address } = req.body;
 
   try {
     // Check if the user already exists
@@ -16,7 +16,7 @@ export const signup = async (req, res) => {
     }
 
     // Create a new user
-    const newUser = new User({ name, email, password, role, address });
+    const newUser = new User({ name, email, password, address });
     await newUser.save();
 
     res
@@ -29,9 +29,11 @@ export const signup = async (req, res) => {
     res.status(500).json({ message: "Error creating user.", error });
   }
 };
+
+
 //sign in
 export const signin = async (req, res) => {
-  const JWT_SECRET = process.env.JWT_SECRET;
+  const { JWT_SECRET } = process.env;
 
   const { email, password } = req.body;
 
@@ -51,10 +53,17 @@ export const signin = async (req, res) => {
 
     // Generate a JWT
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "12h",
+      expiresIn: "1h",
     });
 
-    res.status(200).json({ message: "Sign in successful.", token });
+    // res.cookie("jwt", token, {
+    //   httpOnly: true,
+    //   // secure: true, 
+    //   sameSite: "Strict",
+    // });
+  
+
+    res.status(200).json({ message: "Sign in successful.", token});
   } catch (error) {
     res.status(500).json({ message: "Error signing in.", error });
   }

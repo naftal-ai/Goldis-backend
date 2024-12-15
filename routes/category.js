@@ -25,6 +25,8 @@ router.post('/',authenticate, authorizeAdmin, async (req, res) => {
         res.status(500).json({message: error.message});
     }
 })
+
+
 //Read
 //all
 router.get('/', async (req, res) => {
@@ -34,7 +36,9 @@ router.get('/', async (req, res) => {
     } catch (error) {
         res.status(500).json({message: error.message});
     }
-})    
+})
+
+
 //Update : admin
 router.patch('/:id', authenticate, authorizeAdmin, async (req, res) => {
     

@@ -46,8 +46,7 @@ export const read = (req, res) => {
   if (minPrice) filters.price = { ...filters.price, $gte: parseFloat(minPrice) };
   if (maxPrice) filters.price = { ...filters.price, $lte: parseFloat(maxPrice) };
 
-  //TODO find by category name
-  Product.find(filters)
+  Product.find(filters).populate('category')
     .then(products => res.status(200).json(products))
     .catch(err => res.status(500).json({ error: err.message }));
 

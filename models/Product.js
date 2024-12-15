@@ -8,9 +8,9 @@ const productSchema = new mongoose.Schema({
     ref: "Category",
     required: true,
   },
-  description: { type: String },
+  description:  String,
   images: [String],
-  stock: { type: Number, required: true, default: 0 }, // General stock
+  stock: { type: Number, required: true, default: 0 }, 
 });
 
 //instance method to update stock
