@@ -1,6 +1,5 @@
 import {
   getProducts,
-  productsInStock,
   updateStock,
   createOrder,
   createSession,
@@ -23,8 +22,23 @@ export const create = async (req, res) => {
     const products = await getProducts(items);
 
     //make sure products in stock
-    if (!productsInStock(products))
-      throw new Error("not all the products in stock");
+    const unavailableProducts = products.filter(
+      (product) => product.quantity > product.stock
+    );
+
+
+    //return all the products are note in stock
+    if (unavailableProducts.length > 0) {
+      return res.status(422).json({
+        error: "Unprocessable Entity",
+        message: "Some products in your order exceed the available stock.",
+        details: unavailableProducts.map((product) => ({
+          productId: product._id,
+          requested: product.quantity,
+          available: product.stock,
+        })),
+      });
+    }
 
     //update the amount in stoke
     await updateStock(items);
@@ -45,7 +59,6 @@ export const create = async (req, res) => {
       sessionUrl: session.url,
     });
   } catch (err) {
-
     res.status(500).json({ err });
   }
 };
@@ -73,22 +86,23 @@ export const readAllUsersOrders = async (req, res) => {
 export const readByOrderId = async (req, res) => {
   const { id } = req.params;
   try {
-    const order = await Order.findById(id).populate({path: "products.product", model: "Product" });
-    
+    const order = await Order.findById(id).populate({
+      path: "products.product",
+      model: "Product",
+    });
+
     //check if the order belong to this particular user
-    if(req.user.role === "admin"){
-      console.log("admin accessed")
-      return res.status(200).json(order);  
+    if (req.user.role === "admin") {
+      return res.status(200).json(order);
     }
 
     const { orders } = req.user;
 
     if (orders.includes(id)) {
-      console.log('includes work with string to object id')
       return res.status(200).json(order);
     }
 
-    res.status(404).json({message: "order not found."});
+    res.status(404).json({ message: "order not found." });
   } catch (error) {
     res.status(404).json({ message: error.message });
   }
@@ -101,20 +115,18 @@ export const reactivate = async (req, res) => {
     let products = await Product.find({
       _id: { $in: order.products.map((p) => p.product) },
     });
-    
+
     const items = order.products;
     //add quantity field
-    const updatedProducts = products.map(product => {
-      // Find the corresponding item with the same product ID
-      const matchingItem = items.find(item => item.product.equals(product._id));
+    const updatedProducts = products.map((product) => {
+      const matchingItem = items.find((item) =>
+        item.product.equals(product._id)
+      );
       return {
-        ...product._doc, // Keep all the existing product properties
-        quantity: matchingItem ? matchingItem.quantity : 0, // Add the quantity or default to 0 if not found
+        ...product._doc,
+        quantity: matchingItem ? matchingItem.quantity : 0,
       };
     });
-    
-    console.log(updatedProducts);
-
 
     const session = await createSession(updatedProducts, orderId);
 
