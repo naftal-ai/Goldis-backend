@@ -145,7 +145,6 @@ export const reactivate = async (req, res) => {
     let products = await Product.find({
       _id: { $in: order.products.map((p) => p.product) },
     });
-<<<<<<< HEAD
 
     const items = order.products;
     //add quantity field
@@ -158,22 +157,6 @@ export const reactivate = async (req, res) => {
         quantity: matchingItem ? matchingItem.quantity : 0,
       };
     });
-=======
-    
-    const items = order.products;
-    //add quantity field
-    const updatedProducts = products.map(product => {
-      // Find the corresponding item with the same product ID
-      const matchingItem = items.find(item => item.product.equals(product._id));
-      return {
-        ...product._doc, // Keep all the existing product properties
-        quantity: matchingItem ? matchingItem.quantity : 0, // Add the quantity or default to 0 if not found
-      };
-    });
-    
-    console.log(updatedProducts);
-
->>>>>>> 7bfe133e12bdbae06666577f7b6b1db75b676bc1
 
     const session = await createSession(updatedProducts, orderId);
 
