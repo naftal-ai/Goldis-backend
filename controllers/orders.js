@@ -1,5 +1,9 @@
 import {
   getProducts,
+<<<<<<< HEAD
+=======
+  productsInStock,
+>>>>>>> 7bfe133e12bdbae06666577f7b6b1db75b676bc1
   updateStock,
   createOrder,
   createSession,
@@ -20,6 +24,7 @@ export const create = async (req, res) => {
   try {
     //get all the products from ids
     const products = await getProducts(items);
+<<<<<<< HEAD
 
     //make sure products in stock
     const unavailableProducts = products.filter(
@@ -40,6 +45,13 @@ export const create = async (req, res) => {
       });
     }
 
+=======
+
+    //make sure products in stock
+    if (!productsInStock(products))
+      throw new Error("not all the products in stock");
+
+>>>>>>> 7bfe133e12bdbae06666577f7b6b1db75b676bc1
     //update the amount in stoke
     await updateStock(items);
 
@@ -59,6 +71,7 @@ export const create = async (req, res) => {
       sessionUrl: session.url,
     });
   } catch (err) {
+
     res.status(500).json({ err });
   }
 };
@@ -86,6 +99,7 @@ export const readAllUsersOrders = async (req, res) => {
 export const readByOrderId = async (req, res) => {
   const { id } = req.params;
   try {
+<<<<<<< HEAD
     const order = await Order.findById(id).populate({
       path: "products.product",
       model: "Product",
@@ -94,15 +108,31 @@ export const readByOrderId = async (req, res) => {
     //check if the order belong to this particular user
     if (req.user.role === "admin") {
       return res.status(200).json(order);
+=======
+    const order = await Order.findById(id).populate({path: "products.product", model: "Product" });
+    
+    //check if the order belong to this particular user
+    if(req.user.role === "admin"){
+      console.log("admin accessed")
+      return res.status(200).json(order);  
+>>>>>>> 7bfe133e12bdbae06666577f7b6b1db75b676bc1
     }
 
     const { orders } = req.user;
 
     if (orders.includes(id)) {
+<<<<<<< HEAD
       return res.status(200).json(order);
     }
 
     res.status(404).json({ message: "order not found." });
+=======
+      console.log('includes work with string to object id')
+      return res.status(200).json(order);
+    }
+
+    res.status(404).json({message: "order not found."});
+>>>>>>> 7bfe133e12bdbae06666577f7b6b1db75b676bc1
   } catch (error) {
     res.status(404).json({ message: error.message });
   }
@@ -115,6 +145,7 @@ export const reactivate = async (req, res) => {
     let products = await Product.find({
       _id: { $in: order.products.map((p) => p.product) },
     });
+<<<<<<< HEAD
 
     const items = order.products;
     //add quantity field
@@ -127,6 +158,22 @@ export const reactivate = async (req, res) => {
         quantity: matchingItem ? matchingItem.quantity : 0,
       };
     });
+=======
+    
+    const items = order.products;
+    //add quantity field
+    const updatedProducts = products.map(product => {
+      // Find the corresponding item with the same product ID
+      const matchingItem = items.find(item => item.product.equals(product._id));
+      return {
+        ...product._doc, // Keep all the existing product properties
+        quantity: matchingItem ? matchingItem.quantity : 0, // Add the quantity or default to 0 if not found
+      };
+    });
+    
+    console.log(updatedProducts);
+
+>>>>>>> 7bfe133e12bdbae06666577f7b6b1db75b676bc1
 
     const session = await createSession(updatedProducts, orderId);
 

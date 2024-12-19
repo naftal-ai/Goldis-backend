@@ -2,6 +2,7 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import Stripe from "stripe";
 
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 
