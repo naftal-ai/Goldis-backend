@@ -26,7 +26,6 @@ export const create = async (req, res) => {
       (product) => product.quantity > product.stock
     );
 
-
     //return all the products are note in stock
     if (unavailableProducts.length > 0) {
       return res.status(422).json({
@@ -59,11 +58,11 @@ export const create = async (req, res) => {
       sessionUrl: session.url,
     });
   } catch (err) {
-
     res.status(500).json({ err });
   }
 };
 
+// Read : user
 export const read = async (req, res) => {
   const { user } = req;
 
@@ -75,6 +74,7 @@ export const read = async (req, res) => {
   }
 };
 
+// Read : admin
 export const readAllUsersOrders = async (req, res) => {
   try {
     const orders = await Order.find();
@@ -84,6 +84,7 @@ export const readAllUsersOrders = async (req, res) => {
   }
 };
 
+// Read : admin | user
 export const readByOrderId = async (req, res) => {
   const { id } = req.params;
   try {
@@ -109,6 +110,7 @@ export const readByOrderId = async (req, res) => {
   }
 };
 
+// reactivate : user 
 export const reactivate = async (req, res) => {
   const { orderId } = req.params;
   try {
@@ -136,3 +138,105 @@ export const reactivate = async (req, res) => {
     res.status(404).json({ message: "order not found" });
   }
 };
+
+//Update quantity : user only for pending orders
+export const updateQuantity = async (req, res) => {
+  const { orderId } = req.params;
+  //items is an array of objects with product id and quantity
+  const { items } = req.body;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    if (order.status !== "pending") {
+      return res.status(400).json({
+        message: "You can only update quantities for pending orders.",
+      });
+    }
+
+    const products = await getProducts(items);
+
+    const unavailableProducts = products.filter(
+      (product) => product.quantity > product.stock
+    );
+  
+    if (unavailableProducts.length > 0) {
+      return res.status(422).json({
+        error: "Unprocessable Entity",
+        message: "Some products in your order exceed the available stock.",
+        details: unavailableProducts.map((product) => ({
+          productId: product._id,
+          requested: product.quantity,
+          available: product.stock,
+        })),
+      });
+    }
+
+    await updateStock(items);
+
+    order.products = items;
+
+    //calculate total price
+    const total = products.reduce(
+      (total, { price, quantity }) => total + price * quantity,
+      0
+    );
+
+    order.totalPrice = total;
+
+    await order.save();
+
+    res.status(200).json(order);
+
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+
+};
+// Update status : admin
+export const updateStatus = async (req, res) => {
+  const { orderId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    order.status = status;
+    await order.save();
+
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+};
+
+// Delete if the status is pending : user
+export const delete_o = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const order = await Order.findById(orderId);
+    console.log(order)
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    if (order.status !== "pending") {
+      return res.status(400).json({
+        message: "You can only delete pending orders.",
+      });
+    }
+
+    await Order.findByIdAndDelete(orderId);
+
+    res.status(200).json({ message: "Order deleted." });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+}

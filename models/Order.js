@@ -39,4 +39,14 @@ OrderSchema.post('save', async function (doc) {
   await User.findByIdAndUpdate(doc.user, {$push: {orders: doc._id}});
 })
 
+OrderSchema.pre('findOneAndDelete', async function (next) {
+  const doc = await this.model.findOne(this.getQuery()); // Get the document being deleted
+  if (doc) {
+    await User.findByIdAndUpdate(doc.user, { $pull: { orders: doc._id } });
+  }
+  next();
+});
+
+
+
 export default mongoose.model('Order', OrderSchema);
