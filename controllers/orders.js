@@ -76,7 +76,7 @@ export const read = async (req, res) => {
 
 // Read : admin
 export const readAllUsersOrders = async (req, res) => {
-  const { status, userId } = req.query;
+  const { status, userId, populate } = req.query;
 
   const filters = {};
 
@@ -84,15 +84,27 @@ export const readAllUsersOrders = async (req, res) => {
   if (status) filters.status = status;
 
   try {
-    const orders = await Order.find(filters).populate({
-      path: "products.product",
-      model: "Product",
-    });
+    // Build the query
+    let query = Order.find(filters);
+
+    // Conditionally add populate
+    if (populate && populate === "true") {
+      query = query.populate({
+        path: "products.product",
+        model: "Product",
+      });
+    }
+
+    // Execute the query
+    const orders = await query;
+
     res.status(200).json(orders);
   } catch (error) {
+    console.log(error);
     res.status(404).json({ message: error.message });
   }
 };
+
 
 // Read : admin | user
 export const readByOrderId = async (req, res) => {

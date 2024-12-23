@@ -35,7 +35,7 @@ router.get("/", authenticate, read);
 //all : admin
 router.get("/all", authenticate, authorizeAdmin, readAllUsersOrders);
 
-//by order id : admin
+//by order id : admin | user
 router.get("/:id", authenticate, readByOrderId);
 
 
