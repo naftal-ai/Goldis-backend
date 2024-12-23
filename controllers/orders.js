@@ -76,8 +76,18 @@ export const read = async (req, res) => {
 
 // Read : admin
 export const readAllUsersOrders = async (req, res) => {
+  const { status, userId } = req.query;
+
+  const filters = {};
+
+  if (userId) filters.user = userId;
+  if (status) filters.status = status;
+
   try {
-    const orders = await Order.find();
+    const orders = await Order.find(filters).populate({
+      path: "products.product",
+      model: "Product",
+    });
     res.status(200).json(orders);
   } catch (error) {
     res.status(404).json({ message: error.message });
@@ -110,7 +120,7 @@ export const readByOrderId = async (req, res) => {
   }
 };
 
-// reactivate : user 
+// reactivate : user
 export const reactivate = async (req, res) => {
   const { orderId } = req.params;
   try {
@@ -162,7 +172,7 @@ export const updateQuantity = async (req, res) => {
     const unavailableProducts = products.filter(
       (product) => product.quantity > product.stock
     );
-  
+
     if (unavailableProducts.length > 0) {
       return res.status(422).json({
         error: "Unprocessable Entity",
@@ -190,12 +200,11 @@ export const updateQuantity = async (req, res) => {
     await order.save();
 
     res.status(200).json(order);
-
   } catch (error) {
     res.status(404).json({ message: error.message });
   }
-
 };
+
 // Update status : admin
 export const updateStatus = async (req, res) => {
   const { orderId } = req.params;
@@ -222,7 +231,7 @@ export const delete_o = async (req, res) => {
 
   try {
     const order = await Order.findById(orderId);
-    console.log(order)
+    console.log(order);
     if (!order) {
       return res.status(404).json({ message: "Order not found." });
     }
@@ -239,4 +248,4 @@ export const delete_o = async (req, res) => {
   } catch (error) {
     res.status(404).json({ message: error.message });
   }
-}
+};
