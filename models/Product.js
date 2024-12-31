@@ -18,7 +18,7 @@ productSchema.methods.updateStock = async function (quantityChange) {
   if (this.stock + quantityChange < 0) {
     throw new Error('Insufficient stock');
   }
-
+  console.log("updateQuantity", quantityChange);
   this.stock += quantityChange;
   return this.save();
 };

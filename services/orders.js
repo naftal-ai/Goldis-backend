@@ -2,9 +2,7 @@ import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import Stripe from "stripe";
 
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 
 export const getProducts = async (items) => {
   const products = await Promise.all(
@@ -22,7 +20,14 @@ export const getProducts = async (items) => {
   return replaceIdsWithProducts();
 };
 
+export const calculateTotal = (products) => {
+  return products.reduce(
+    (total, { price, quantity }) => total + price * quantity,
+    0
+  );
+}
 export const createOrder = async (user, items, totalPrice) => {
+  
   const products = items.map(({ id: product, quantity }) => ({
     product,
     quantity,
@@ -64,30 +69,61 @@ export const createSession = async (products, orderId) => {
     line_items: lineItems,
     metadata: { orderId },
     mode: "payment",
-    success_url: `${process.env.CLIENT_URL}/success`,
-    cancel_url: `${process.env.CLIENT_URL}/cancel`,
+    success_url: `${process.env.CLIENT_URL}/success?orderId=${orderId}`,
+    cancel_url: `${process.env.CLIENT_URL}/cancel?orderId=${orderId}`,
   });
 };
 
-// 3. send a payment intent to the user
-export const getClientSecret = async (amount, currency) => {
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount, // Amount in the smallest currency unit (e.g., cents for USD)
-    currency, // E.g., 'usd'
-  });
+export const deleteOrder = async (orderId) => {
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new Error("Order not found.");
+  }
 
-  return paymentIntent.client_secret;
+  if (order.status !== "pending") {
+    throw new Error("You can only delete pending orders.");
+  }
+
+  await Order.findByIdAndDelete(orderId);
 };
+
+export const checkProductsAvailable = async (products) => {
+
+  //make sure products in stock
+  const unavailableProducts = products.filter(
+    (product) => product.quantity > product.stock
+  );
+  let error = null;
+  
+  //return all the products are note in stock
+  if (unavailableProducts.length > 0) {
+    throw {
+      status: 422,
+      error: "Unprocessable Entity",
+      message: "Some products in your order exceed the available stock.",
+      details: unavailableProducts.map((product) => ({
+        productId: product._id,
+        requested: product.quantity,
+        available: product.stock,
+      }))
+    };
+  }
+};
+
 // 4. Make sure the payment passed in success
-
 // 5. update the amount in stock of all the products in the order
 export const updateStock = async (items) => {
-  const updatePromises = items.map(async ({ id, quantity }) => {
-    const product = await Product.findById(id);
-    product.updateStock(-quantity);
-  });
-
-  await Promise.all(updatePromises);
+  try {
+    
+    const updatePromises = items.map(async ({ id, quantity }) => {
+      const product = await Product.findById(id);
+      product.updateStock(-quantity);
+    });
+  
+    await Promise.all(updatePromises);
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 // 6. update the order in the data base with status pending

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import User from "./User.js";
+import Product from "./Product.js";
 
 const { Schema } = mongoose;
 
@@ -44,6 +45,13 @@ OrderSchema.pre('findOneAndDelete', async function (next) {
   const doc = await this.model.findOne(this.getQuery()); // Get the document being deleted
   if (doc) {
     await User.findByIdAndUpdate(doc.user, { $pull: { orders: doc._id } });
+  }
+  //update stock
+  const { products } = doc;
+  
+  for (const {product, quantity} of products){
+    const productDoc = await Product.findById(product);
+    productDoc.updateStock(quantity);
   }
   next(); // Continue with the delete operation
 });

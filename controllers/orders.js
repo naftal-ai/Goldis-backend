@@ -3,6 +3,9 @@ import {
   updateStock,
   createOrder,
   createSession,
+  deleteOrder,
+  checkProductsAvailable,
+  calculateTotal,
 } from "../services/orders.js";
 
 import Order from "../models/Order.js";
@@ -21,32 +24,13 @@ export const create = async (req, res) => {
     //get all the products from ids
     const products = await getProducts(items);
 
-    //make sure products in stock
-    const unavailableProducts = products.filter(
-      (product) => product.quantity > product.stock
-    );
-
-    //return all the products are note in stock
-    if (unavailableProducts.length > 0) {
-      return res.status(422).json({
-        error: "Unprocessable Entity",
-        message: "Some products in your order exceed the available stock.",
-        details: unavailableProducts.map((product) => ({
-          productId: product._id,
-          requested: product.quantity,
-          available: product.stock,
-        })),
-      });
-    }
+    await checkProductsAvailable(products);
 
     //update the amount in stoke
     await updateStock(items);
 
     //calculate total price
-    const total = products.reduce(
-      (total, { price, quantity }) => total + price * quantity,
-      0
-    );
+    const total = calculateTotal(products);
 
     //create order with status pending
     const order = await createOrder(req.user, items, total);
@@ -58,6 +42,9 @@ export const create = async (req, res) => {
       sessionUrl: session.url,
     });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json(err);
+    }
     res.status(500).json({ err });
   }
 };
@@ -104,7 +91,6 @@ export const readAllUsersOrders = async (req, res) => {
     res.status(404).json({ message: error.message });
   }
 };
-
 
 // Read : admin | user
 export const readByOrderId = async (req, res) => {
@@ -164,56 +150,37 @@ export const reactivate = async (req, res) => {
 //Update quantity : user only for pending orders
 export const updateQuantity = async (req, res) => {
   const { orderId } = req.params;
-  //items is an array of objects with product id and quantity
-  const { items } = req.body;
 
   try {
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found." });
-    }
+    deleteOrder(orderId);
+    // create new order
+    const { items } = req.body; // Products IDs, and quantities
 
-    if (order.status !== "pending") {
-      return res.status(400).json({
-        message: "You can only update quantities for pending orders.",
-      });
-    }
+    //get all the products from ids
 
     const products = await getProducts(items);
 
-    const unavailableProducts = products.filter(
-      (product) => product.quantity > product.stock
-    );
+    await checkProductsAvailable(products);
 
-    if (unavailableProducts.length > 0) {
-      return res.status(422).json({
-        error: "Unprocessable Entity",
-        message: "Some products in your order exceed the available stock.",
-        details: unavailableProducts.map((product) => ({
-          productId: product._id,
-          requested: product.quantity,
-          available: product.stock,
-        })),
-      });
-    }
-
+    //update the amount in stoke
     await updateStock(items);
 
-    order.products = items;
-
     //calculate total price
-    const total = products.reduce(
-      (total, { price, quantity }) => total + price * quantity,
-      0
-    );
+    const total = calculateTotal(products);
+    //create order with status pending
+    const order = await createOrder(req.user, items, total);
+    if (!order) throw new Error("unable to create order");
 
-    order.totalPrice = total;
+    const session = await createSession(products, order._id);
 
-    await order.save();
-
-    res.status(200).json(order);
-  } catch (error) {
-    res.status(404).json({ message: error.message });
+    res.status(200).json({
+      sessionUrl: session.url,
+    });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json(err);
+    }
+    res.status(500).json({ err });
   }
 };
 
@@ -239,23 +206,10 @@ export const updateStatus = async (req, res) => {
 
 // Delete if the status is pending : user
 export const delete_o = async (req, res) => {
-  const { orderId } = req.params;
-
   try {
-    const order = await Order.findById(orderId);
-    console.log(order);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found." });
-    }
+    const { orderId } = req.params;
 
-    if (order.status !== "pending") {
-      return res.status(400).json({
-        message: "You can only delete pending orders.",
-      });
-    }
-
-    await Order.findByIdAndDelete(orderId);
-
+    deleteOrder(orderId);
     res.status(200).json({ message: "Order deleted." });
   } catch (error) {
     res.status(404).json({ message: error.message });
