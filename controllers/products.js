@@ -41,7 +41,7 @@ export const read = (req, res) => {
   const { name, category, minPrice, maxPrice } = req.query;
 
   const filters = {};
-  if (name) filters.name = name;
+  if (name) filters.name = { $regex: name, $options: "i" }; // חיפוש חלקי, לא רגיש לאותיות גדולות/קטנות
   if (category) filters.category = category;
   if (minPrice) filters.price = { ...filters.price, $gte: parseFloat(minPrice) };
   if (maxPrice) filters.price = { ...filters.price, $lte: parseFloat(maxPrice) };
