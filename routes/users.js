@@ -16,21 +16,14 @@ router.post('/signup', signup);
 router.post('/signin', signin);
 //sign out
 
-//privilege user
+
 //read myData : user
 router.get('/my-data',authenticate, user.read);
-//update my info : user
-
-//delete my user
-
-//privilege admin
-//create another admin
 
 //read : admin
 router.get('/', authenticate, authorizeAdmin, admin.readAll);
 router.get('/:id', authenticate, authorizeAdmin, admin.readById);
 
-//update : admin 
 
 //delete :admin
 router.delete('/:id', authenticate, authorizeAdmin, admin.delete_u);

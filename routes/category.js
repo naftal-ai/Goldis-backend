@@ -1,70 +1,25 @@
-import express from 'express';
-import Category from '../models/Category.js';
+import express from "express";
+import {
+  create,
+  readAll,
+  update,
+  deleteCategory,
+} from "../controllers/categories.js";
 
 //middlewares
-import authenticate from '../middlewares/authenticate.js';
-import authorizeAdmin from '../middlewares/authorizeAdmin.js';
-
+import authenticate from "../middlewares/authenticate.js";
+import authorizeAdmin from "../middlewares/authorizeAdmin.js";
 
 const router = express.Router();
 
 //Create : admin
-router.post('/',authenticate, authorizeAdmin, async (req, res) => {
-    const { name, image } = req.body;
-    
-    const category = new Category({
-        name,
-        image
-    });
-    
-    try {
-       const response =  await category.save();
-       
-       res.status(201).json(response);
-    } catch (error) {
-        res.status(500).json({message: error.message});
-    }
-})
-
+router.post("/", authenticate, authorizeAdmin, create);
 
 //Read
-//all
-router.get('/', async (req, res) => {
-    try {
-        const categories = await Category.find();
-        res.status(200).json(categories);
-    } catch (error) {
-        res.status(500).json({message: error.message});
-    }
-})
-
+router.get("/", readAll);
 
 //Update : admin
-router.patch('/:id', authenticate, authorizeAdmin, async (req, res) => {
-    
-    const { id } = req.params;
-    const updates = req.body;
-
-    try {
-        const category = await Category.findByIdAndUpdate(id, updates, {
-            new: true,
-            runValidators: true
-        })
-        res.status(201).json(category);
-    } catch (error) {
-        res.status(500).json({message: error.message}); 
-    }
-})
+router.patch("/:id", authenticate, authorizeAdmin, update);
 //Delete : admin
-router.delete('/:id',authenticate , authorizeAdmin, async (req, res) => {
-    const {id} = req.params;
-    //TODO 
-    //check if there is products under this category
-    try {
-        const category = await Category.findOneAndDelete({_id: id});
-        res.status(201).json(category);
-    } catch (error) {
-        res.status(500).json({message: error.message});
-    }
-})
+router.delete("/:id", authenticate, authorizeAdmin, deleteCategory);
 export default router;

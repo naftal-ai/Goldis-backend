@@ -1,7 +1,6 @@
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 //services
 import { connect } from "./services/db.js";
